@@ -518,30 +518,16 @@ function detectarQuadrilateros(){
 
             approx.delete();
         }
+//ordenar 4 pontos
+      if(
+    melhorQuad.length >= 4
+){
 
-        if(
-            melhorQuad
-        ){
-
-            // pega apenas 4 pontos extremos
-            if(
-                melhorQuad.length > 4
-            ){
-
-                melhorQuad =
-                melhorQuad
-                .sort(
-                    (a,b)=>
-                    (a.x+a.y) -
-                    (b.x+b.y)
-                )
-                .slice(0,4);
-            }
-
-            candidatoSelecionado =
-            ordenarPontos(
-                melhorQuad
-            );
+    melhorQuad =
+    obter4Extremos(
+        melhorQuad
+    );
+}
 
             pontos =
             JSON.parse(
@@ -591,7 +577,52 @@ function detectarQuadrilateros(){
 // ORDENAR PONTOS
 // TL TR BR BL
 // =====================================
+function obter4Extremos(pontos){
 
+    let topLeft = pontos[0];
+    let topRight = pontos[0];
+    let bottomLeft = pontos[0];
+    let bottomRight = pontos[0];
+
+    pontos.forEach(p=>{
+
+        if(
+            p.x + p.y <
+            topLeft.x + topLeft.y
+        ){
+            topLeft = p;
+        }
+
+        if(
+            p.x - p.y >
+            topRight.x - topRight.y
+        ){
+            topRight = p;
+        }
+
+        if(
+            p.y - p.x >
+            bottomLeft.y - bottomLeft.x
+        ){
+            bottomLeft = p;
+        }
+
+        if(
+            p.x + p.y >
+            bottomRight.x + bottomRight.y
+        ){
+            bottomRight = p;
+        }
+
+    });
+
+    return [
+        topLeft,
+        topRight,
+        bottomRight,
+        bottomLeft
+    ];
+}
 function ordenarPontos(pts){
 
     const soma =
