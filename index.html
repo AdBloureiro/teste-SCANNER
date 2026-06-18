@@ -1,48 +1,85 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teste Scanner</title>
 
-<link rel="stylesheet" href="style.css">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Scanner Inteligente</title>
+
+<link
+    rel="stylesheet"
+    href="style.css"
+>
 
 </head>
+
 <body>
 
 <div class="container">
 
-    <h2>Scanner de Documento</h2>
+    <h1>
+        Scanner Inteligente
+    </h1>
 
-    <input
-        type="file"
-        id="fileInput"
-        accept="image/*"
-    >
+    <div class="uploadArea">
 
-    <br><br>
+        <input
+            type="file"
+            id="fileInput"
+            accept="image/*"
+        >
+
+    </div>
 
     <div id="canvasContainer">
 
-        <canvas id="previewCanvas"></canvas>
+        <canvas
+            id="previewCanvas"
+        ></canvas>
 
     </div>
 
     <div class="buttons">
 
-        <button id="btnAuto">
+        <button
+            id="btnAuto"
+            disabled
+        >
             Usar Corte Detectado
         </button>
 
-        <button id="btnManual">
+        <button
+            id="btnManual"
+            disabled
+        >
             Ajustar Manualmente
         </button>
 
     </div>
 
+    <div
+        id="status"
+        class="status"
+    >
+        Aguardando imagem...
+    </div>
+
 </div>
+
+<!-- OpenCV -->
+<script
+async
+src="https://docs.opencv.org/4.x/opencv.js">
+</script>
 
 <script src="script.js"></script>
 
 </body>
+
 </html>
