@@ -1,42 +1,44 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teste Scanner OpenCV</title>
+<title>Teste Scanner</title>
 
 <link rel="stylesheet" href="style.css">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-
 </head>
-
 <body>
 
 <div class="container">
 
-    <h2>Scanner Teste (OpenCV)</h2>
+    <h2>Scanner de Documento</h2>
 
-    <input type="file" id="fileInput" accept="image/*">
-
-    <button onclick="processarImagem()">
-        Auto Scan
-    </button>
-
-    <hr>
-
-    <h3>Original</h3>
-    <img id="previewOriginal">
-
-    <h3>Resultado</h3>
-    <img id="previewResultado">
+    <input
+        type="file"
+        id="fileInput"
+        accept="image/*"
+    >
 
     <br><br>
 
-    <button onclick="baixar()">
-        Baixar Resultado
-    </button>
+    <div id="canvasContainer">
+
+        <canvas id="previewCanvas"></canvas>
+
+    </div>
+
+    <div class="buttons">
+
+        <button id="btnAuto">
+            Usar Corte Detectado
+        </button>
+
+        <button id="btnManual">
+            Ajustar Manualmente
+        </button>
+
+    </div>
 
 </div>
 
