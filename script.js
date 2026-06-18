@@ -335,28 +335,20 @@ function desenharPontos(){
 
 function detectarQuadrilateros(){
 
+    console.log("Iniciando detecção...");
+
     candidatos = [];
-
     candidatoSelecionado = null;
-
     pontos = [];
 
-    // cria canvas temporário
     const tempCanvas =
-    document.createElement(
-        "canvas"
-    );
+    document.createElement("canvas");
 
-    tempCanvas.width =
-    canvas.width;
-
-    tempCanvas.height =
-    canvas.height;
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
 
     const tempCtx =
-    tempCanvas.getContext(
-        "2d"
-    );
+    tempCanvas.getContext("2d");
 
     tempCtx.drawImage(
         imagemOriginal,
@@ -366,20 +358,11 @@ function detectarQuadrilateros(){
         canvas.height
     );
 
-    // OpenCV
-    let src =
-    cv.imread(
-        tempCanvas
-    );
+    let src = cv.imread(tempCanvas);
 
-    let gray =
-    new cv.Mat();
-
-    let blur =
-    new cv.Mat();
-
-    let edges =
-    new cv.Mat();
+    let gray = new cv.Mat();
+    let blur = new cv.Mat();
+    let edges = new cv.Mat();
 
     let contours =
     new cv.MatVector();
@@ -389,14 +372,12 @@ function detectarQuadrilateros(){
 
     try{
 
-        // cinza
         cv.cvtColor(
             src,
             gray,
             cv.COLOR_RGBA2GRAY
         );
 
-        // blur
         cv.GaussianBlur(
             gray,
             blur,
@@ -404,15 +385,30 @@ function detectarQuadrilateros(){
             0
         );
 
-        // bordas
+        // MAIS SENSÍVEL
         cv.Canny(
             blur,
             edges,
-            75,
-            200
+            30,
+            120
         );
 
-        // contornos
+        // UNE BORDAS QUEBRADAS
+        let kernel =
+        cv.Mat.ones(
+            3,
+            3,
+            cv.CV_8U
+        );
+
+        cv.dilate(
+            edges,
+            edges,
+            kernel
+        );
+
+        kernel.delete();
+
         cv.findContours(
             edges,
             contours,
@@ -421,8 +417,12 @@ function detectarQuadrilateros(){
             cv.CHAIN_APPROX_SIMPLE
         );
 
-        let maiorArea = 0;
+        console.log(
+            "Contornos:",
+            contours.size()
+        );
 
+        let maiorArea = 0;
         let melhorQuad = null;
 
         for(
@@ -435,17 +435,14 @@ function detectarQuadrilateros(){
             contours.get(i);
 
             const area =
-            cv.contourArea(
-                cnt
-            );
+            cv.contourArea(cnt);
 
-            // ignora muito pequenos
             if(
                 area <
                 (
                     canvas.width *
                     canvas.height *
-                    0.02
+                    0.01
                 )
             ){
                 continue;
@@ -463,20 +460,21 @@ function detectarQuadrilateros(){
             cv.approxPolyDP(
                 cnt,
                 approx,
-                0.02 * peri,
+                0.03 * peri,
                 true
             );
 
-            // apenas quadriláteros
+            // MAIS FLEXÍVEL
             if(
-                approx.rows === 4
+                approx.rows >= 4 &&
+                approx.rows <= 8
             ){
 
                 let quad = [];
 
                 for(
                     let p=0;
-                    p<4;
+                    p<approx.rows;
                     p++
                 ){
 
@@ -484,18 +482,25 @@ function detectarQuadrilateros(){
 
                         x:
                         approx.data32S[
-                            p * 2
+                            p*2
                         ],
 
                         y:
                         approx.data32S[
-                            p * 2 + 1
+                            p*2+1
                         ]
                     });
                 }
 
                 candidatos.push(
                     quad
+                );
+
+                console.log(
+                    "Candidato:",
+                    area,
+                    quad.length,
+                    "pontos"
                 );
 
                 if(
@@ -514,10 +519,24 @@ function detectarQuadrilateros(){
             approx.delete();
         }
 
-        // escolhe maior
         if(
             melhorQuad
         ){
+
+            // pega apenas 4 pontos extremos
+            if(
+                melhorQuad.length > 4
+            ){
+
+                melhorQuad =
+                melhorQuad
+                .sort(
+                    (a,b)=>
+                    (a.x+a.y) -
+                    (b.x+b.y)
+                )
+                .slice(0,4);
+            }
 
             candidatoSelecionado =
             ordenarPontos(
@@ -531,34 +550,36 @@ function detectarQuadrilateros(){
                 )
             );
 
-            btnAuto.disabled =
-            false;
-
-            btnManual.disabled =
-            false;
+            btnAuto.disabled = false;
+            btnManual.disabled = false;
 
             statusDiv.innerText =
             "Objeto detectado";
-        }
-        else{
+
+            console.log(
+                "Objeto detectado!"
+            );
+
+        }else{
 
             statusDiv.innerText =
-            "Nenhum quadrilátero encontrado";
+            "Nenhum objeto encontrado";
+
+            console.log(
+                "Nada encontrado"
+            );
         }
 
         redesenhar();
 
     }catch(err){
 
-        console.error(
-            err
-        );
+        console.error(err);
 
         statusDiv.innerText =
         "Erro na detecção";
     }
 
-    // limpeza
     src.delete();
     gray.delete();
     blur.delete();
@@ -566,7 +587,6 @@ function detectarQuadrilateros(){
     contours.delete();
     hierarchy.delete();
 }
-
 // =====================================
 // ORDENAR PONTOS
 // TL TR BR BL
