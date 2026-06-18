@@ -1,21 +1,47 @@
 body{
-    font-family: Arial;
+    margin:0;
+    font-family:Arial;
     background:#1e1e1e;
     color:white;
     text-align:center;
 }
 
 .container{
-    width:500px;
+    max-width:900px;
     margin:auto;
-    background:#2c2c2c;
     padding:20px;
-    border-radius:10px;
 }
 
-img{
+#canvasContainer{
+    margin-top:20px;
+    border:2px solid #444;
+    display:inline-block;
+    background:black;
+}
+
+canvas{
     max-width:100%;
-    margin-top:10px;
-    border:2px solid white;
-    background:white;
+    display:block;
+}
+
+.buttons{
+    margin-top:20px;
+}
+
+button{
+    padding:12px 20px;
+    margin:5px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+#btnAuto{
+    background:#4CAF50;
+    color:white;
+}
+
+#btnManual{
+    background:#ff9800;
+    color:white;
 }
