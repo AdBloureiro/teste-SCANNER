@@ -128,6 +128,8 @@ async function carregarImagem(event){
 
             statusDiv.innerText =
             "Imagem carregada";
+            btnAuto.disabled = false;
+btnManual.disabled = false;
 
             await aguardarOpenCV();
 
