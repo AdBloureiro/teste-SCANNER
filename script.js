@@ -1,104 +1,198 @@
-const canvas = document.getElementById("previewCanvas");
-const ctx = canvas.getContext("2d");
+// =====================================
+// ELEMENTOS
+// =====================================
 
-let imagem = null;
+const fileInput =
+document.getElementById(
+    "fileInput"
+);
+
+const canvas =
+document.getElementById(
+    "previewCanvas"
+);
+
+const ctx =
+canvas.getContext("2d");
+
+const statusDiv =
+document.getElementById(
+    "status"
+);
+
+const btnAuto =
+document.getElementById(
+    "btnAuto"
+);
+
+const btnManual =
+document.getElementById(
+    "btnManual"
+);
+
+// =====================================
+// VARIÁVEIS GLOBAIS
+// =====================================
+
+let cvPronto = false;
+
+let imagemOriginal = null;
+
+let candidatos = [];
+
+let candidatoSelecionado = null;
+
 let pontos = [];
+
 let pontoSelecionado = -1;
 
-// ======================
-// CARREGAR IMAGEM
-// ======================
+// =====================================
+// AGUARDAR OPENCV
+// =====================================
 
-document
-.getElementById("fileInput")
-.addEventListener("change", carregarImagem);
+function aguardarOpenCV(){
 
-function carregarImagem(e){
+    return new Promise(
+        (resolve)=>{
 
-    const arquivo = e.target.files[0];
+            if(
+                window.cv &&
+                cv.Mat
+            ){
 
-    if(!arquivo) return;
+                cvPronto = true;
 
-    const reader = new FileReader();
+                resolve();
 
-    reader.onload = function(event){
-
-        imagem = new Image();
-
-        imagem.onload = function(){
-
-            // evita canvas gigante no celular
-            const MAX = 1200;
-
-            let largura = imagem.width;
-            let altura = imagem.height;
-
-            if(largura > MAX){
-
-                const escala = MAX / largura;
-
-                largura = largura * escala;
-                altura = altura * escala;
+                return;
             }
 
-            canvas.width = largura;
-            canvas.height = altura;
+            cv["onRuntimeInitialized"] =
+            ()=>{
 
-            criarPoligonoInicial();
+                cvPronto = true;
 
-            desenhar();
+                console.log(
+                    "OpenCV carregado"
+                );
 
-            console.log(
-                "Imagem carregada:",
-                largura,
-                altura
+                statusDiv.innerText =
+                "OpenCV carregado";
+
+                resolve();
+            };
+        }
+    );
+}
+
+// =====================================
+// CARREGAR IMAGEM
+// =====================================
+
+fileInput.addEventListener(
+    "change",
+    carregarImagem
+);
+
+async function carregarImagem(event){
+
+    const arquivo =
+    event.target.files[0];
+
+    if(!arquivo)
+        return;
+
+    statusDiv.innerText =
+    "Carregando imagem...";
+
+    const reader =
+    new FileReader();
+
+    reader.onload =
+    function(e){
+
+        const img =
+        new Image();
+
+        img.onload =
+        async function(){
+
+            imagemOriginal =
+            img;
+
+            prepararCanvas(
+                img
             );
+
+            desenharImagem();
+
+            statusDiv.innerText =
+            "Imagem carregada";
+
+            await aguardarOpenCV();
+
+            statusDiv.innerText =
+            "Detectando objetos...";
+
+            detectarQuadrilateros();
         };
 
-        imagem.src = event.target.result;
+        img.src =
+        e.target.result;
     };
 
-    reader.readAsDataURL(arquivo);
+    reader.readAsDataURL(
+        arquivo
+    );
 }
 
-// ======================
-// POLÍGONO INICIAL
-// ======================
+// =====================================
+// PREPARAR CANVAS
+// =====================================
 
-function criarPoligonoInicial(){
+function prepararCanvas(img){
 
-    pontos = [
+    const MAX =
+    1200;
 
-        {
-            x: canvas.width * 0.15,
-            y: canvas.height * 0.15
-        },
+    let largura =
+    img.width;
 
-        {
-            x: canvas.width * 0.85,
-            y: canvas.height * 0.15
-        },
+    let altura =
+    img.height;
 
-        {
-            x: canvas.width * 0.85,
-            y: canvas.height * 0.85
-        },
+    if(
+        largura > MAX
+    ){
 
-        {
-            x: canvas.width * 0.15,
-            y: canvas.height * 0.85
-        }
+        const escala =
+        MAX / largura;
 
-    ];
+        largura =
+        largura *
+        escala;
+
+        altura =
+        altura *
+        escala;
+    }
+
+    canvas.width =
+    largura;
+
+    canvas.height =
+    altura;
 }
 
-// ======================
-// DESENHAR
-// ======================
+// =====================================
+// DESENHAR IMAGEM
+// =====================================
 
-function desenhar(){
+function desenharImagem(){
 
-    if(!imagem) return;
+    if(
+        !imagemOriginal
+    ) return;
 
     ctx.clearRect(
         0,
@@ -108,70 +202,437 @@ function desenhar(){
     );
 
     ctx.drawImage(
-        imagem,
+        imagemOriginal,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+// =====================================
+// REDESENHAR TUDO
+// =====================================
+
+function redesenhar(){
+
+    desenharImagem();
+
+    desenharCandidatos();
+
+    desenharPontos();
+}
+
+// =====================================
+// DESENHAR CANDIDATOS
+// =====================================
+
+function desenharCandidatos(){
+
+    candidatos.forEach(
+        (quad)=>{
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                quad[0].x,
+                quad[0].y
+            );
+
+            for(
+                let i=1;
+                i<quad.length;
+                i++
+            ){
+
+                ctx.lineTo(
+                    quad[i].x,
+                    quad[i].y
+                );
+            }
+
+            ctx.closePath();
+
+            ctx.strokeStyle =
+            "#2196F3";
+
+            ctx.lineWidth = 2;
+
+            ctx.stroke();
+        }
+    );
+
+    if(
+        candidatoSelecionado
+    ){
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            candidatoSelecionado[0].x,
+            candidatoSelecionado[0].y
+        );
+
+        for(
+            let i=1;
+            i<
+            candidatoSelecionado.length;
+            i++
+        ){
+
+            ctx.lineTo(
+                candidatoSelecionado[i].x,
+                candidatoSelecionado[i].y
+            );
+        }
+
+        ctx.closePath();
+
+        ctx.strokeStyle =
+        "#00ff00";
+
+        ctx.lineWidth = 4;
+
+        ctx.stroke();
+    }
+}
+
+// =====================================
+// DESENHAR PONTOS
+// =====================================
+
+function desenharPontos(){
+
+    if(
+        pontos.length !== 4
+    ) return;
+
+    pontos.forEach(
+        (p)=>{
+
+            ctx.beginPath();
+
+            ctx.arc(
+                p.x,
+                p.y,
+                12,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+            "#00ff00";
+
+            ctx.fill();
+        }
+    );
+}
+// =====================================
+// DETECÇÃO DE QUADRILÁTEROS
+// =====================================
+
+function detectarQuadrilateros(){
+
+    candidatos = [];
+
+    candidatoSelecionado = null;
+
+    pontos = [];
+
+    // cria canvas temporário
+    const tempCanvas =
+    document.createElement(
+        "canvas"
+    );
+
+    tempCanvas.width =
+    canvas.width;
+
+    tempCanvas.height =
+    canvas.height;
+
+    const tempCtx =
+    tempCanvas.getContext(
+        "2d"
+    );
+
+    tempCtx.drawImage(
+        imagemOriginal,
         0,
         0,
         canvas.width,
         canvas.height
     );
 
-    // polígono
-
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineWidth = 4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        pontos[0].x,
-        pontos[0].y
+    // OpenCV
+    let src =
+    cv.imread(
+        tempCanvas
     );
 
-    for(let i=1;i<pontos.length;i++){
+    let gray =
+    new cv.Mat();
 
-        ctx.lineTo(
-            pontos[i].x,
-            pontos[i].y
-        );
-    }
+    let blur =
+    new cv.Mat();
 
-    ctx.closePath();
-    ctx.stroke();
+    let edges =
+    new cv.Mat();
 
-    // pontos
+    let contours =
+    new cv.MatVector();
 
-    for(let i=0;i<pontos.length;i++){
+    let hierarchy =
+    new cv.Mat();
 
-        ctx.fillStyle = "#00ff00";
+    try{
 
-        ctx.beginPath();
-
-        ctx.arc(
-            pontos[i].x,
-            pontos[i].y,
-            12,
-            0,
-            Math.PI * 2
+        // cinza
+        cv.cvtColor(
+            src,
+            gray,
+            cv.COLOR_RGBA2GRAY
         );
 
-        ctx.fill();
+        // blur
+        cv.GaussianBlur(
+            gray,
+            blur,
+            new cv.Size(5,5),
+            0
+        );
+
+        // bordas
+        cv.Canny(
+            blur,
+            edges,
+            75,
+            200
+        );
+
+        // contornos
+        cv.findContours(
+            edges,
+            contours,
+            hierarchy,
+            cv.RETR_LIST,
+            cv.CHAIN_APPROX_SIMPLE
+        );
+
+        let maiorArea = 0;
+
+        let melhorQuad = null;
+
+        for(
+            let i=0;
+            i<contours.size();
+            i++
+        ){
+
+            const cnt =
+            contours.get(i);
+
+            const area =
+            cv.contourArea(
+                cnt
+            );
+
+            // ignora muito pequenos
+            if(
+                area <
+                (
+                    canvas.width *
+                    canvas.height *
+                    0.02
+                )
+            ){
+                continue;
+            }
+
+            const peri =
+            cv.arcLength(
+                cnt,
+                true
+            );
+
+            const approx =
+            new cv.Mat();
+
+            cv.approxPolyDP(
+                cnt,
+                approx,
+                0.02 * peri,
+                true
+            );
+
+            // apenas quadriláteros
+            if(
+                approx.rows === 4
+            ){
+
+                let quad = [];
+
+                for(
+                    let p=0;
+                    p<4;
+                    p++
+                ){
+
+                    quad.push({
+
+                        x:
+                        approx.data32S[
+                            p * 2
+                        ],
+
+                        y:
+                        approx.data32S[
+                            p * 2 + 1
+                        ]
+                    });
+                }
+
+                candidatos.push(
+                    quad
+                );
+
+                if(
+                    area >
+                    maiorArea
+                ){
+
+                    maiorArea =
+                    area;
+
+                    melhorQuad =
+                    quad;
+                }
+            }
+
+            approx.delete();
+        }
+
+        // escolhe maior
+        if(
+            melhorQuad
+        ){
+
+            candidatoSelecionado =
+            ordenarPontos(
+                melhorQuad
+            );
+
+            pontos =
+            JSON.parse(
+                JSON.stringify(
+                    candidatoSelecionado
+                )
+            );
+
+            btnAuto.disabled =
+            false;
+
+            btnManual.disabled =
+            false;
+
+            statusDiv.innerText =
+            "Objeto detectado";
+        }
+        else{
+
+            statusDiv.innerText =
+            "Nenhum quadrilátero encontrado";
+        }
+
+        redesenhar();
+
+    }catch(err){
+
+        console.error(
+            err
+        );
+
+        statusDiv.innerText =
+        "Erro na detecção";
     }
+
+    // limpeza
+    src.delete();
+    gray.delete();
+    blur.delete();
+    edges.delete();
+    contours.delete();
+    hierarchy.delete();
 }
 
-// ======================
-// CONVERSÃO DE ESCALA
-// ======================
+// =====================================
+// ORDENAR PONTOS
+// TL TR BR BL
+// =====================================
 
-function obterPosicao(clientX, clientY){
+function ordenarPontos(pts){
+
+    const soma =
+    pts.map(
+        p => p.x + p.y
+    );
+
+    const diferenca =
+    pts.map(
+        p => p.x - p.y
+    );
+
+    const tl =
+    pts[
+        soma.indexOf(
+            Math.min(...soma)
+        )
+    ];
+
+    const br =
+    pts[
+        soma.indexOf(
+            Math.max(...soma)
+        )
+    ];
+
+    const tr =
+    pts[
+        diferenca.indexOf(
+            Math.max(...diferenca)
+        )
+    ];
+
+    const bl =
+    pts[
+        diferenca.indexOf(
+            Math.min(...diferenca)
+        )
+    ];
+
+    return [
+        tl,
+        tr,
+        br,
+        bl
+    ];
+}
+// =====================================
+// UTILITÁRIOS
+// =====================================
+
+function obterPosicaoCanvas(clientX, clientY){
 
     const rect =
     canvas.getBoundingClientRect();
 
     const escalaX =
-    canvas.width / rect.width;
+    canvas.width /
+    rect.width;
 
     const escalaY =
-    canvas.height / rect.height;
+    canvas.height /
+    rect.height;
 
     return {
 
@@ -185,13 +646,13 @@ function obterPosicao(clientX, clientY){
     };
 }
 
-// ======================
-// SELECIONAR PONTO
-// ======================
+function encontrarPonto(x,y){
 
-function selecionarPonto(x,y){
-
-    for(let i=0;i<pontos.length;i++){
+    for(
+        let i=0;
+        i<pontos.length;
+        i++
+    ){
 
         const dx =
         x - pontos[i].x;
@@ -205,29 +666,37 @@ function selecionarPonto(x,y){
             dy*dy
         );
 
-        if(distancia < 40){
+        if(
+            distancia < 30
+        ){
 
-            pontoSelecionado = i;
-            return;
+            return i;
         }
     }
+
+    return -1;
 }
 
-// ======================
+// =====================================
 // MOUSE
-// ======================
+// =====================================
 
 canvas.addEventListener(
     "mousedown",
     (e)=>{
 
+        if(
+            pontos.length !== 4
+        ) return;
+
         const pos =
-        obterPosicao(
+        obterPosicaoCanvas(
             e.clientX,
             e.clientY
         );
 
-        selecionarPonto(
+        pontoSelecionado =
+        encontrarPonto(
             pos.x,
             pos.y
         );
@@ -238,22 +707,25 @@ canvas.addEventListener(
     "mousemove",
     (e)=>{
 
-        if(pontoSelecionado === -1)
-            return;
+        if(
+            pontoSelecionado === -1
+        ) return;
 
         const pos =
-        obterPosicao(
+        obterPosicaoCanvas(
             e.clientX,
             e.clientY
         );
 
-        pontos[pontoSelecionado] = {
+        pontos[
+            pontoSelecionado
+        ] = {
 
             x: pos.x,
             y: pos.y
         };
 
-        desenhar();
+        redesenhar();
     }
 );
 
@@ -273,13 +745,17 @@ canvas.addEventListener(
     }
 );
 
-// ======================
-// TOUCH (ANDROID/IPHONE)
-// ======================
+// =====================================
+// TOUCH
+// =====================================
 
 canvas.addEventListener(
     "touchstart",
     (e)=>{
+
+        if(
+            pontos.length !== 4
+        ) return;
 
         e.preventDefault();
 
@@ -287,26 +763,30 @@ canvas.addEventListener(
         e.touches[0];
 
         const pos =
-        obterPosicao(
+        obterPosicaoCanvas(
             touch.clientX,
             touch.clientY
         );
 
-        selecionarPonto(
+        pontoSelecionado =
+        encontrarPonto(
             pos.x,
             pos.y
         );
 
     },
-    { passive:false }
+    {
+        passive:false
+    }
 );
 
 canvas.addEventListener(
     "touchmove",
     (e)=>{
 
-        if(pontoSelecionado === -1)
-            return;
+        if(
+            pontoSelecionado === -1
+        ) return;
 
         e.preventDefault();
 
@@ -314,21 +794,25 @@ canvas.addEventListener(
         e.touches[0];
 
         const pos =
-        obterPosicao(
+        obterPosicaoCanvas(
             touch.clientX,
             touch.clientY
         );
 
-        pontos[pontoSelecionado] = {
+        pontos[
+            pontoSelecionado
+        ] = {
 
             x: pos.x,
             y: pos.y
         };
 
-        desenhar();
+        redesenhar();
 
     },
-    { passive:false }
+    {
+        passive:false
+    }
 );
 
 canvas.addEventListener(
@@ -339,15 +823,105 @@ canvas.addEventListener(
     }
 );
 
-// ======================
-// BOTÕES
-// ======================
+// =====================================
+// DESENHAR POLÍGONO MANUAL
+// =====================================
 
-document
-.getElementById("btnAuto")
-.addEventListener(
+function desenharPontos(){
+
+    if(
+        pontos.length !== 4
+    ) return;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        pontos[0].x,
+        pontos[0].y
+    );
+
+    for(
+        let i=1;
+        i<pontos.length;
+        i++
+    ){
+
+        ctx.lineTo(
+            pontos[i].x,
+            pontos[i].y
+        );
+    }
+
+    ctx.closePath();
+
+    ctx.strokeStyle =
+    "#00ff00";
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+    pontos.forEach(
+        (p)=>{
+
+            ctx.beginPath();
+
+            ctx.arc(
+                p.x,
+                p.y,
+                12,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+            "#00ff00";
+
+            ctx.fill();
+
+            ctx.strokeStyle =
+            "#ffffff";
+
+            ctx.lineWidth = 2;
+
+            ctx.stroke();
+        }
+    );
+}
+
+// =====================================
+// BOTÃO AJUSTE MANUAL
+// =====================================
+
+btnManual.addEventListener(
     "click",
     ()=>{
+
+        statusDiv.innerText =
+        "Modo manual ativo. Arraste os pontos verdes.";
+
+        redesenhar();
+    }
+);
+
+// =====================================
+// BOTÃO CONFIRMAR DETECÇÃO
+// =====================================
+
+btnAuto.addEventListener(
+    "click",
+    ()=>{
+
+        if(
+            pontos.length !== 4
+        ){
+
+            alert(
+                "Nenhum objeto detectado."
+            );
+
+            return;
+        }
 
         console.log(
             "Pontos confirmados:"
@@ -357,20 +931,28 @@ document
             pontos
         );
 
+        statusDiv.innerText =
+        "Corte confirmado.";
+        
         alert(
-            "Corte confirmado!"
+            "Detecção confirmada!\n\nPróximo passo: aplicar o recorte."
         );
     }
 );
 
-document
-.getElementById("btnManual")
-.addEventListener(
-    "click",
+// =====================================
+// REDIMENSIONAMENTO
+// =====================================
+
+window.addEventListener(
+    "resize",
     ()=>{
 
-        alert(
-            "Modo manual selecionado!"
-        );
+        if(
+            imagemOriginal
+        ){
+
+            redesenhar();
+        }
     }
 );
