@@ -1,174 +1,269 @@
-let imagemBase64 = null;
-let resultadoFinal = null;
+const canvas =
+document.getElementById("previewCanvas");
 
-// espera OpenCV carregar
-function esperarOpenCV() {
-    return new Promise((resolve) => {
-        if (cv && cv.Mat) resolve();
-        else cv['onRuntimeInitialized'] = () => resolve();
-    });
-}
+const ctx =
+canvas.getContext("2d");
 
-// upload
-document.getElementById("fileInput").addEventListener("change", function(e){
+let imagem = null;
 
-    let file = e.target.files[0];
+let pontos = [];
 
-    let reader = new FileReader();
+let pontoSelecionado = -1;
 
-    reader.onload = function(event){
+document
+.getElementById("fileInput")
+.addEventListener(
+    "change",
+    carregarImagem
+);
 
-        imagemBase64 = event.target.result;
+function carregarImagem(e){
 
-        document.getElementById("previewOriginal").src = imagemBase64;
+    const arquivo =
+    e.target.files[0];
+
+    if(!arquivo) return;
+
+    const reader =
+    new FileReader();
+
+    reader.onload =
+    function(event){
+
+        imagem =
+        new Image();
+
+        imagem.onload =
+        function(){
+
+            canvas.width =
+            imagem.width;
+
+            canvas.height =
+            imagem.height;
+
+            criarPoligonoFake();
+
+            desenhar();
+
+        };
+
+        imagem.src =
+        event.target.result;
     };
 
-    reader.readAsDataURL(file);
-});
+    reader.readAsDataURL(
+        arquivo
+    );
+}
 
-async function processarImagem(){
+function criarPoligonoFake(){
 
-    if(!imagemBase64){
-        alert("Selecione uma imagem");
-        return;
+    pontos = [
+
+        {
+            x: canvas.width * 0.15,
+            y: canvas.height * 0.15
+        },
+
+        {
+            x: canvas.width * 0.85,
+            y: canvas.height * 0.15
+        },
+
+        {
+            x: canvas.width * 0.85,
+            y: canvas.height * 0.85
+        },
+
+        {
+            x: canvas.width * 0.15,
+            y: canvas.height * 0.85
+        }
+
+    ];
+}
+
+function desenhar(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.drawImage(
+        imagem,
+        0,
+        0
+    );
+
+    ctx.strokeStyle =
+    "#00ff00";
+
+    ctx.lineWidth = 4;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        pontos[0].x,
+        pontos[0].y
+    );
+
+    for(
+        let i=1;
+        i<pontos.length;
+        i++
+    ){
+
+        ctx.lineTo(
+            pontos[i].x,
+            pontos[i].y
+        );
     }
 
-    await esperarOpenCV();
+    ctx.closePath();
 
-    let img = new Image();
-    img.src = imagemBase64;
+    ctx.stroke();
 
-    img.onload = () => {
+    for(
+        let i=0;
+        i<pontos.length;
+        i++
+    ){
 
-        let src = cv.imread(img);
-        let gray = new cv.Mat();
-        let blur = new cv.Mat();
-        let edges = new cv.Mat();
+        ctx.fillStyle =
+        "#00ff00";
 
-        // grayscale
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        ctx.beginPath();
 
-        // blur
-        cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
-
-        // edges
-        cv.Canny(blur, edges, 75, 200);
-
-        // contornos
-        let contours = new cv.MatVector();
-        let hierarchy = new cv.Mat();
-
-        cv.findContours(
-            edges,
-            contours,
-            hierarchy,
-            cv.RETR_EXTERNAL,
-            cv.CHAIN_APPROX_SIMPLE
+        ctx.arc(
+            pontos[i].x,
+            pontos[i].y,
+            10,
+            0,
+            Math.PI * 2
         );
 
-        let maxArea = 0;
-        let maxContour = null;
+        ctx.fill();
+    }
+}
 
-        for(let i=0;i<contours.size();i++){
+canvas.addEventListener(
+    "mousedown",
+    iniciarArraste
+);
 
-            let cnt = contours.get(i);
-            let area = cv.contourArea(cnt);
+canvas.addEventListener(
+    "mousemove",
+    moverPonto
+);
 
-            if(area > maxArea){
-                maxArea = area;
-                maxContour = cnt;
-            }
-        }
+canvas.addEventListener(
+    "mouseup",
+    finalizarArraste
+);
 
-        if(!maxContour){
-            alert("Documento não detectado");
-            return;
-        }
+canvas.addEventListener(
+    "mouseleave",
+    finalizarArraste
+);
 
-        let approx = new cv.Mat();
-        cv.approxPolyDP(
-            maxContour,
-            approx,
-            0.02 * cv.arcLength(maxContour, true),
-            true
+function iniciarArraste(e){
+
+    const rect =
+    canvas.getBoundingClientRect();
+
+    const x =
+    e.clientX - rect.left;
+
+    const y =
+    e.clientY - rect.top;
+
+    for(
+        let i=0;
+        i<pontos.length;
+        i++
+    ){
+
+        const dx =
+        x - pontos[i].x;
+
+        const dy =
+        y - pontos[i].y;
+
+        const distancia =
+        Math.sqrt(
+            dx*dx +
+            dy*dy
         );
 
-        if(approx.rows !== 4){
-            alert("Não detectou 4 cantos (teste imagem melhor)");
-            return;
+        if(distancia < 20){
+
+            pontoSelecionado =
+            i;
+
+            break;
         }
+    }
+}
 
-        let pts = [];
-        for(let i=0;i<4;i++){
-            pts.push({
-                x: approx.data32S[i*2],
-                y: approx.data32S[i*2+1]
-            });
-        }
+function moverPonto(e){
 
-        pts.sort((a,b)=>a.y-b.y);
+    if(
+        pontoSelecionado === -1
+    ) return;
 
-        let top = pts.slice(0,2).sort((a,b)=>a.x-b.x);
-        let bottom = pts.slice(2,4).sort((a,b)=>a.x-b.x);
+    const rect =
+    canvas.getBoundingClientRect();
 
-        let tl = top[0], tr = top[1];
-        let bl = bottom[0], br = bottom[1];
+    pontos[
+        pontoSelecionado
+    ] = {
 
-        let width = 800;
-        let height = 1000;
+        x:
+        e.clientX -
+        rect.left,
 
-        let srcTri = cv.matFromArray(4,1,cv.CV_32FC2,[
-            tl.x, tl.y,
-            tr.x, tr.y,
-            br.x, br.y,
-            bl.x, bl.y
-        ]);
-
-        let dstTri = cv.matFromArray(4,1,cv.CV_32FC2,[
-            0,0,
-            width,0,
-            width,height,
-            0,height
-        ]);
-
-        let M = cv.getPerspectiveTransform(srcTri, dstTri);
-
-        let dst = new cv.Mat();
-
-        cv.warpPerspective(
-            src,
-            dst,
-            M,
-            new cv.Size(width, height)
-        );
-
-        let canvas = document.createElement("canvas");
-        cv.imshow(canvas, dst);
-
-        resultadoFinal = canvas.toDataURL("image/jpeg", 0.95);
-
-        document.getElementById("previewResultado").src = resultadoFinal;
-
-        // cleanup
-        src.delete();
-        gray.delete();
-        blur.delete();
-        edges.delete();
-        contours.delete();
-        hierarchy.delete();
-        dst.delete();
+        y:
+        e.clientY -
+        rect.top
     };
+
+    desenhar();
 }
 
-function baixar(){
+function finalizarArraste(){
 
-    if(!resultadoFinal){
-        alert("Nada para baixar");
-        return;
-    }
-
-    let a = document.createElement("a");
-    a.href = resultadoFinal;
-    a.download = "scan.jpg";
-    a.click();
+    pontoSelecionado =
+    -1;
 }
+
+document
+.getElementById("btnAuto")
+.onclick =
+function(){
+
+    console.log(
+        "Pontos confirmados:"
+    );
+
+    console.log(
+        pontos
+    );
+
+    alert(
+        "Corte automático confirmado!"
+    );
+};
+
+document
+.getElementById("btnManual")
+.onclick =
+function(){
+
+    alert(
+        "Modo manual selecionado!"
+    );
+};
