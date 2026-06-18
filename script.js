@@ -10,6 +10,10 @@ let pontos = [];
 
 let pontoSelecionado = -1;
 
+// ======================
+// CARREGAR IMAGEM
+// ======================
+
 document
 .getElementById("fileInput")
 .addEventListener(
@@ -45,7 +49,6 @@ function carregarImagem(e){
             criarPoligonoFake();
 
             desenhar();
-
         };
 
         imagem.src =
@@ -56,6 +59,10 @@ function carregarImagem(e){
         arquivo
     );
 }
+
+// ======================
+// POLÍGONO INICIAL
+// ======================
 
 function criarPoligonoFake(){
 
@@ -84,7 +91,13 @@ function criarPoligonoFake(){
     ];
 }
 
+// ======================
+// DESENHAR
+// ======================
+
 function desenhar(){
+
+    if(!imagem) return;
 
     ctx.clearRect(
         0,
@@ -102,7 +115,7 @@ function desenhar(){
     ctx.strokeStyle =
     "#00ff00";
 
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
 
     ctx.beginPath();
 
@@ -141,7 +154,7 @@ function desenhar(){
         ctx.arc(
             pontos[i].x,
             pontos[i].y,
-            10,
+            14,
             0,
             Math.PI * 2
         );
@@ -149,6 +162,37 @@ function desenhar(){
         ctx.fill();
     }
 }
+
+// ======================
+// FUNÇÃO DE ESCALA
+// ======================
+
+function obterPosicao(eventX,eventY){
+
+    const rect =
+    canvas.getBoundingClientRect();
+
+    const escalaX =
+    canvas.width / rect.width;
+
+    const escalaY =
+    canvas.height / rect.height;
+
+    return {
+
+        x:
+        (eventX - rect.left)
+        * escalaX,
+
+        y:
+        (eventY - rect.top)
+        * escalaY
+    };
+}
+
+// ======================
+// MOUSE
+// ======================
 
 canvas.addEventListener(
     "mousedown",
@@ -172,14 +216,114 @@ canvas.addEventListener(
 
 function iniciarArraste(e){
 
-    const rect =
-    canvas.getBoundingClientRect();
+    const pos =
+    obterPosicao(
+        e.clientX,
+        e.clientY
+    );
 
-    const x =
-    e.clientX - rect.left;
+    selecionarPonto(
+        pos.x,
+        pos.y
+    );
+}
 
-    const y =
-    e.clientY - rect.top;
+function moverPonto(e){
+
+    if(
+        pontoSelecionado === -1
+    ) return;
+
+    const pos =
+    obterPosicao(
+        e.clientX,
+        e.clientY
+    );
+
+    pontos[
+        pontoSelecionado
+    ] = {
+
+        x: pos.x,
+        y: pos.y
+    };
+
+    desenhar();
+}
+
+// ======================
+// TOUCH
+// ======================
+
+canvas.addEventListener(
+    "touchstart",
+    iniciarTouch,
+    { passive:false }
+);
+
+canvas.addEventListener(
+    "touchmove",
+    moverTouch,
+    { passive:false }
+);
+
+canvas.addEventListener(
+    "touchend",
+    finalizarArraste
+);
+
+function iniciarTouch(e){
+
+    e.preventDefault();
+
+    const touch =
+    e.touches[0];
+
+    const pos =
+    obterPosicao(
+        touch.clientX,
+        touch.clientY
+    );
+
+    selecionarPonto(
+        pos.x,
+        pos.y
+    );
+}
+
+function moverTouch(e){
+
+    if(
+        pontoSelecionado === -1
+    ) return;
+
+    e.preventDefault();
+
+    const touch =
+    e.touches[0];
+
+    const pos =
+    obterPosicao(
+        touch.clientX,
+        touch.clientY
+    );
+
+    pontos[
+        pontoSelecionado
+    ] = {
+
+        x: pos.x,
+        y: pos.y
+    };
+
+    desenhar();
+}
+
+// ======================
+// SELEÇÃO
+// ======================
+
+function selecionarPonto(x,y){
 
     for(
         let i=0;
@@ -199,46 +343,29 @@ function iniciarArraste(e){
             dy*dy
         );
 
-        if(distancia < 20){
+        if(distancia < 40){
 
             pontoSelecionado =
             i;
 
-            break;
+            return;
         }
     }
 }
 
-function moverPonto(e){
-
-    if(
-        pontoSelecionado === -1
-    ) return;
-
-    const rect =
-    canvas.getBoundingClientRect();
-
-    pontos[
-        pontoSelecionado
-    ] = {
-
-        x:
-        e.clientX -
-        rect.left,
-
-        y:
-        e.clientY -
-        rect.top
-    };
-
-    desenhar();
-}
+// ======================
+// FINALIZAR
+// ======================
 
 function finalizarArraste(){
 
     pontoSelecionado =
     -1;
 }
+
+// ======================
+// BOTÕES
+// ======================
 
 document
 .getElementById("btnAuto")
@@ -249,12 +376,12 @@ function(){
         "Pontos confirmados:"
     );
 
-    console.log(
+    console.table(
         pontos
     );
 
     alert(
-        "Corte automático confirmado!"
+        "Corte confirmado!"
     );
 };
 
@@ -264,6 +391,6 @@ document
 function(){
 
     alert(
-        "Modo manual selecionado!"
+        "Modo manual!"
     );
 };
