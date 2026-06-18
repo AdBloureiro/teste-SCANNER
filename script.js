@@ -1,13 +1,8 @@
-const canvas =
-document.getElementById("previewCanvas");
-
-const ctx =
-canvas.getContext("2d");
+const canvas = document.getElementById("previewCanvas");
+const ctx = canvas.getContext("2d");
 
 let imagem = null;
-
 let pontos = [];
-
 let pontoSelecionado = -1;
 
 // ======================
@@ -16,55 +11,61 @@ let pontoSelecionado = -1;
 
 document
 .getElementById("fileInput")
-.addEventListener(
-    "change",
-    carregarImagem
-);
+.addEventListener("change", carregarImagem);
 
 function carregarImagem(e){
 
-    const arquivo =
-    e.target.files[0];
+    const arquivo = e.target.files[0];
 
     if(!arquivo) return;
 
-    const reader =
-    new FileReader();
+    const reader = new FileReader();
 
-    reader.onload =
-    function(event){
+    reader.onload = function(event){
 
-        imagem =
-        new Image();
+        imagem = new Image();
 
-        imagem.onload =
-        function(){
+        imagem.onload = function(){
 
-            canvas.width =
-            imagem.width;
+            // evita canvas gigante no celular
+            const MAX = 1200;
 
-            canvas.height =
-            imagem.height;
+            let largura = imagem.width;
+            let altura = imagem.height;
 
-            criarPoligonoFake();
+            if(largura > MAX){
+
+                const escala = MAX / largura;
+
+                largura = largura * escala;
+                altura = altura * escala;
+            }
+
+            canvas.width = largura;
+            canvas.height = altura;
+
+            criarPoligonoInicial();
 
             desenhar();
+
+            console.log(
+                "Imagem carregada:",
+                largura,
+                altura
+            );
         };
 
-        imagem.src =
-        event.target.result;
+        imagem.src = event.target.result;
     };
 
-    reader.readAsDataURL(
-        arquivo
-    );
+    reader.readAsDataURL(arquivo);
 }
 
 // ======================
 // POLÍGONO INICIAL
 // ======================
 
-function criarPoligonoFake(){
+function criarPoligonoInicial(){
 
     pontos = [
 
@@ -109,13 +110,15 @@ function desenhar(){
     ctx.drawImage(
         imagem,
         0,
-        0
+        0,
+        canvas.width,
+        canvas.height
     );
 
-    ctx.strokeStyle =
-    "#00ff00";
+    // polígono
 
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#00ff00";
+    ctx.lineWidth = 4;
 
     ctx.beginPath();
 
@@ -124,11 +127,7 @@ function desenhar(){
         pontos[0].y
     );
 
-    for(
-        let i=1;
-        i<pontos.length;
-        i++
-    ){
+    for(let i=1;i<pontos.length;i++){
 
         ctx.lineTo(
             pontos[i].x,
@@ -137,24 +136,20 @@ function desenhar(){
     }
 
     ctx.closePath();
-
     ctx.stroke();
 
-    for(
-        let i=0;
-        i<pontos.length;
-        i++
-    ){
+    // pontos
 
-        ctx.fillStyle =
-        "#00ff00";
+    for(let i=0;i<pontos.length;i++){
+
+        ctx.fillStyle = "#00ff00";
 
         ctx.beginPath();
 
         ctx.arc(
             pontos[i].x,
             pontos[i].y,
-            14,
+            12,
             0,
             Math.PI * 2
         );
@@ -164,10 +159,10 @@ function desenhar(){
 }
 
 // ======================
-// FUNÇÃO DE ESCALA
+// CONVERSÃO DE ESCALA
 // ======================
 
-function obterPosicao(eventX,eventY){
+function obterPosicao(clientX, clientY){
 
     const rect =
     canvas.getBoundingClientRect();
@@ -181,155 +176,22 @@ function obterPosicao(eventX,eventY){
     return {
 
         x:
-        (eventX - rect.left)
+        (clientX - rect.left)
         * escalaX,
 
         y:
-        (eventY - rect.top)
+        (clientY - rect.top)
         * escalaY
     };
 }
 
 // ======================
-// MOUSE
-// ======================
-
-canvas.addEventListener(
-    "mousedown",
-    iniciarArraste
-);
-
-canvas.addEventListener(
-    "mousemove",
-    moverPonto
-);
-
-canvas.addEventListener(
-    "mouseup",
-    finalizarArraste
-);
-
-canvas.addEventListener(
-    "mouseleave",
-    finalizarArraste
-);
-
-function iniciarArraste(e){
-
-    const pos =
-    obterPosicao(
-        e.clientX,
-        e.clientY
-    );
-
-    selecionarPonto(
-        pos.x,
-        pos.y
-    );
-}
-
-function moverPonto(e){
-
-    if(
-        pontoSelecionado === -1
-    ) return;
-
-    const pos =
-    obterPosicao(
-        e.clientX,
-        e.clientY
-    );
-
-    pontos[
-        pontoSelecionado
-    ] = {
-
-        x: pos.x,
-        y: pos.y
-    };
-
-    desenhar();
-}
-
-// ======================
-// TOUCH
-// ======================
-
-canvas.addEventListener(
-    "touchstart",
-    iniciarTouch,
-    { passive:false }
-);
-
-canvas.addEventListener(
-    "touchmove",
-    moverTouch,
-    { passive:false }
-);
-
-canvas.addEventListener(
-    "touchend",
-    finalizarArraste
-);
-
-function iniciarTouch(e){
-
-    e.preventDefault();
-
-    const touch =
-    e.touches[0];
-
-    const pos =
-    obterPosicao(
-        touch.clientX,
-        touch.clientY
-    );
-
-    selecionarPonto(
-        pos.x,
-        pos.y
-    );
-}
-
-function moverTouch(e){
-
-    if(
-        pontoSelecionado === -1
-    ) return;
-
-    e.preventDefault();
-
-    const touch =
-    e.touches[0];
-
-    const pos =
-    obterPosicao(
-        touch.clientX,
-        touch.clientY
-    );
-
-    pontos[
-        pontoSelecionado
-    ] = {
-
-        x: pos.x,
-        y: pos.y
-    };
-
-    desenhar();
-}
-
-// ======================
-// SELEÇÃO
+// SELECIONAR PONTO
 // ======================
 
 function selecionarPonto(x,y){
 
-    for(
-        let i=0;
-        i<pontos.length;
-        i++
-    ){
+    for(let i=0;i<pontos.length;i++){
 
         const dx =
         x - pontos[i].x;
@@ -345,23 +207,137 @@ function selecionarPonto(x,y){
 
         if(distancia < 40){
 
-            pontoSelecionado =
-            i;
-
+            pontoSelecionado = i;
             return;
         }
     }
 }
 
 // ======================
-// FINALIZAR
+// MOUSE
 // ======================
 
-function finalizarArraste(){
+canvas.addEventListener(
+    "mousedown",
+    (e)=>{
 
-    pontoSelecionado =
-    -1;
-}
+        const pos =
+        obterPosicao(
+            e.clientX,
+            e.clientY
+        );
+
+        selecionarPonto(
+            pos.x,
+            pos.y
+        );
+    }
+);
+
+canvas.addEventListener(
+    "mousemove",
+    (e)=>{
+
+        if(pontoSelecionado === -1)
+            return;
+
+        const pos =
+        obterPosicao(
+            e.clientX,
+            e.clientY
+        );
+
+        pontos[pontoSelecionado] = {
+
+            x: pos.x,
+            y: pos.y
+        };
+
+        desenhar();
+    }
+);
+
+canvas.addEventListener(
+    "mouseup",
+    ()=>{
+
+        pontoSelecionado = -1;
+    }
+);
+
+canvas.addEventListener(
+    "mouseleave",
+    ()=>{
+
+        pontoSelecionado = -1;
+    }
+);
+
+// ======================
+// TOUCH (ANDROID/IPHONE)
+// ======================
+
+canvas.addEventListener(
+    "touchstart",
+    (e)=>{
+
+        e.preventDefault();
+
+        const touch =
+        e.touches[0];
+
+        const pos =
+        obterPosicao(
+            touch.clientX,
+            touch.clientY
+        );
+
+        selecionarPonto(
+            pos.x,
+            pos.y
+        );
+
+    },
+    { passive:false }
+);
+
+canvas.addEventListener(
+    "touchmove",
+    (e)=>{
+
+        if(pontoSelecionado === -1)
+            return;
+
+        e.preventDefault();
+
+        const touch =
+        e.touches[0];
+
+        const pos =
+        obterPosicao(
+            touch.clientX,
+            touch.clientY
+        );
+
+        pontos[pontoSelecionado] = {
+
+            x: pos.x,
+            y: pos.y
+        };
+
+        desenhar();
+
+    },
+    { passive:false }
+);
+
+canvas.addEventListener(
+    "touchend",
+    ()=>{
+
+        pontoSelecionado = -1;
+    }
+);
 
 // ======================
 // BOTÕES
@@ -369,28 +345,32 @@ function finalizarArraste(){
 
 document
 .getElementById("btnAuto")
-.onclick =
-function(){
+.addEventListener(
+    "click",
+    ()=>{
 
-    console.log(
-        "Pontos confirmados:"
-    );
+        console.log(
+            "Pontos confirmados:"
+        );
 
-    console.table(
-        pontos
-    );
+        console.table(
+            pontos
+        );
 
-    alert(
-        "Corte confirmado!"
-    );
-};
+        alert(
+            "Corte confirmado!"
+        );
+    }
+);
 
 document
 .getElementById("btnManual")
-.onclick =
-function(){
+.addEventListener(
+    "click",
+    ()=>{
 
-    alert(
-        "Modo manual!"
-    );
-};
+        alert(
+            "Modo manual selecionado!"
+        );
+    }
+);
