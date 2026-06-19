@@ -331,7 +331,7 @@ function desenhar(){
         ctx.arc(
             p.x,
             p.y,
-            18,
+            35,
             0,
             Math.PI*2
         );
