@@ -6,15 +6,15 @@
 <meta charset="UTF-8">
 
 <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
+name="viewport"
+content="width=device-width, initial-scale=1.0"
 >
 
-<title>Scanner Inteligente</title>
+<title>Scanner</title>
 
 <link
-    rel="stylesheet"
-    href="style.css"
+rel="stylesheet"
+href="style.css"
 >
 
 </head>
@@ -23,56 +23,31 @@
 
 <div class="container">
 
-    <h1>
-        Scanner Inteligente
-    </h1>
+    <h2>Scanner</h2>
 
-    <div class="uploadArea">
-
-        <input
-            type="file"
-            id="fileInput"
-            accept="image/*"
-        >
-
-    </div>
-
-    <div id="canvasContainer">
-
-        <canvas
-            id="previewCanvas"
-        ></canvas>
-
-    </div>
-
-    <div class="buttons">
-
-        <button
-            id="btnAuto"
-            disabled
-        >
-            Usar Corte Detectado
-        </button>
-
-        <button
-            id="btnManual"
-            disabled
-        >
-            Ajustar Manualmente
-        </button>
-
-    </div>
-
-    <div
-        id="status"
-        class="status"
+    <input
+        type="file"
+        id="fileInput"
+        accept="image/*"
     >
+
+    <canvas
+        id="canvas"
+    ></canvas>
+
+    <button
+        id="btnCortar"
+        disabled
+    >
+        Usar Corte Detectado
+    </button>
+
+    <div id="status">
         Aguardando imagem...
     </div>
 
 </div>
 
-<!-- OpenCV -->
 <script
 async
 src="https://docs.opencv.org/4.x/opencv.js">
@@ -81,5 +56,4 @@ src="https://docs.opencv.org/4.x/opencv.js">
 <script src="script.js"></script>
 
 </body>
-
 </html>
