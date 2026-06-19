@@ -923,37 +923,8 @@ btnManual.addEventListener(
 // BOTÃO CONFIRMAR DETECÇÃO
 // =====================================
 
-btnAuto.addEventListener(
-    "click", cortarDocumento
-    ()=>{
-
-        if(
-            pontos.length !== 4
-        ){
-
-            alert(
-                "Nenhum objeto detectado."
-            );
-
-            return;
-        }
-
-        console.log(
-            "Pontos confirmados:"
-        );
-
-        console.table(
-            pontos
-        );
-
-        statusDiv.innerText =
-        "Corte confirmado.";
-        
-        alert(
-            "Detecção confirmada!\n\nPróximo passo: aplicar o recorte."
-        );
-    }
-);
+btnAuto.addEventListener("click", cortarDocumento);
+   
 
 // =====================================
 // REDIMENSIONAMENTO
@@ -1077,11 +1048,6 @@ gray.delete();
 
     canvas.height =
     altura;
-
-    cv.imshow(
-        canvas,
-        dst
-    );
 
     src.delete();
     dst.delete();
