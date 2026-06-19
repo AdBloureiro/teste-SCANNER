@@ -87,13 +87,39 @@ async function carregarImagem(e){
                 0,
                 0
             );
+            pontos = [
+
+    {
+        x: canvas.width * 0.15,
+        y: canvas.height * 0.15
+    },
+
+    {
+        x: canvas.width * 0.85,
+        y: canvas.height * 0.15
+    },
+
+    {
+        x: canvas.width * 0.85,
+        y: canvas.height * 0.85
+    },
+
+    {
+        x: canvas.width * 0.15,
+        y: canvas.height * 0.85
+    }
+
+];
+
+desenhar();
+
+btnCortar.disabled = false;
+
+statusDiv.innerText =
+"Ajuste os pontos e toque em Cortar";
 
             statusDiv.innerText =
             "Detectando...";
-
-            await esperarOpenCV();
-
-            detectarObjeto();
         };
 
         img.src =
