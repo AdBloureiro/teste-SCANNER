@@ -1,16 +1,3 @@
-console.log("SCRIPT CARREGOU");
-
-const fileInput = document.getElementById("fileInput");
-const canvas = document.getElementById("previewCanvas");
-const statusDiv = document.getElementById("status");
-const btnAuto = document.getElementById("btnAuto");
-const btnManual = document.getElementById("btnManual");
-
-console.log("fileInput:", fileInput);
-console.log("canvas:", canvas);
-console.log("status:", statusDiv);
-console.log("btnAuto:", btnAuto);
-console.log("btnManual:", btnManual);
 // =====================================
 // ELEMENTOS
 // =====================================
@@ -42,7 +29,11 @@ const btnManual =
 document.getElementById(
     "btnManual"
 );
-
+console.log("fileInput:", fileInput);
+console.log("canvas:", canvas);
+console.log("status:", statusDiv);
+console.log("btnAuto:", btnAuto);
+console.log("btnManual:", btnManual);
 // =====================================
 // VARIÁVEIS GLOBAIS
 // =====================================
