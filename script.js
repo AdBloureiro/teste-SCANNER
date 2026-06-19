@@ -299,36 +299,7 @@ function desenharCandidatos(){
     }
 }
 
-// =====================================
-// DESENHAR PONTOS
-// =====================================
 
-function desenharPontos(){
-
-    if(
-        pontos.length !== 4
-    ) return;
-
-    pontos.forEach(
-        (p)=>{
-
-            ctx.beginPath();
-
-            ctx.arc(
-                p.x,
-                p.y,
-                12,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fillStyle =
-            "#00ff00";
-
-            ctx.fill();
-        }
-    );
-}
 // =====================================
 // DETECÇÃO DE QUADRILÁTEROS
 // =====================================
@@ -519,43 +490,34 @@ function detectarQuadrilateros(){
             approx.delete();
         }
 //ordenar 4 pontos
-      if(
-    melhorQuad.length >= 4
-){
+  if(melhorQuad && melhorQuad.length >= 4){
 
     melhorQuad =
     obter4Extremos(
         melhorQuad
     );
+
+    candidatoSelecionado =
+    melhorQuad;
+
+    pontos =
+    JSON.parse(
+        JSON.stringify(
+            melhorQuad
+        )
+    );
+
+    btnAuto.disabled = false;
+    btnManual.disabled = false;
+
+    statusDiv.innerText =
+    "Objeto detectado";
+
+}else{
+
+    statusDiv.innerText =
+    "Nenhum objeto encontrado";
 }
-
-            pontos =
-            JSON.parse(
-                JSON.stringify(
-                    candidatoSelecionado
-                )
-            );
-
-            btnAuto.disabled = false;
-            btnManual.disabled = false;
-
-            statusDiv.innerText =
-            "Objeto detectado";
-
-            console.log(
-                "Objeto detectado!"
-            );
-
-        }else{
-
-            statusDiv.innerText =
-            "Nenhum objeto encontrado";
-
-            console.log(
-                "Nada encontrado"
-            );
-        }
-
         redesenhar();
 
     }catch(err){
@@ -962,7 +924,7 @@ btnManual.addEventListener(
 // =====================================
 
 btnAuto.addEventListener(
-    "click",
+    "click", cortarDocumento
     ()=>{
 
         if(
@@ -1009,3 +971,124 @@ window.addEventListener(
         }
     }
 );
+function cortarDocumento(){
+
+    if(
+        pontos.length !== 4
+    ){
+        alert(
+            "Ajuste os 4 pontos primeiro."
+        );
+        return;
+    }
+
+    let src =
+    cv.imread(canvas);
+
+    const tl = pontos[0];
+    const tr = pontos[1];
+    const br = pontos[2];
+    const bl = pontos[3];
+
+    const largura =
+    Math.max(
+        Math.hypot(tr.x-tl.x,tr.y-tl.y),
+        Math.hypot(br.x-bl.x,br.y-bl.y)
+    );
+
+    const altura =
+    Math.max(
+        Math.hypot(bl.x-tl.x,bl.y-tl.y),
+        Math.hypot(br.x-tr.x,br.y-tr.y)
+    );
+
+    const srcTri =
+    cv.matFromArray(
+        4,
+        1,
+        cv.CV_32FC2,
+        [
+            tl.x,tl.y,
+            tr.x,tr.y,
+            br.x,br.y,
+            bl.x,bl.y
+        ]
+    );
+
+    const dstTri =
+    cv.matFromArray(
+        4,
+        1,
+        cv.CV_32FC2,
+        [
+            0,0,
+            largura,0,
+            largura,altura,
+            0,altura
+        ]
+    );
+
+    const matrix =
+    cv.getPerspectiveTransform(
+        srcTri,
+        dstTri
+    );
+
+    const dst =
+    new cv.Mat();
+
+    cv.warpPerspective(
+        src,
+        dst,
+        matrix,
+        new cv.Size(
+            largura,
+            altura
+        )
+    );
+    let gray =
+new cv.Mat();
+
+cv.cvtColor(
+    dst,
+    gray,
+    cv.COLOR_RGBA2GRAY
+);
+
+cv.adaptiveThreshold(
+    gray,
+    gray,
+    255,
+    cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+    cv.THRESH_BINARY,
+    11,
+    2
+);
+
+cv.imshow(
+    canvas,
+    gray
+);
+
+gray.delete();
+
+    canvas.width =
+    largura;
+
+    canvas.height =
+    altura;
+
+    cv.imshow(
+        canvas,
+        dst
+    );
+
+    src.delete();
+    dst.delete();
+    matrix.delete();
+    srcTri.delete();
+    dstTri.delete();
+
+    statusDiv.innerText =
+    "Documento cortado";
+}
