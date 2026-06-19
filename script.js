@@ -324,6 +324,38 @@ function desenhar(){
         0
     );
 
+    // área do corte
+    ctx.beginPath();
+
+    ctx.moveTo(
+        pontos[0].x,
+        pontos[0].y
+    );
+
+    for(let i=1;i<4;i++){
+
+        ctx.lineTo(
+            pontos[i].x,
+            pontos[i].y
+        );
+
+    }
+
+    ctx.closePath();
+
+    ctx.fillStyle =
+    "rgba(0,255,0,0.20)";
+
+    ctx.fill();
+
+    ctx.strokeStyle =
+    "#00ff00";
+
+    ctx.lineWidth = 5;
+
+    ctx.stroke();
+
+    // pontos
     pontos.forEach(p=>{
 
         ctx.beginPath();
@@ -331,7 +363,7 @@ function desenhar(){
         ctx.arc(
             p.x,
             p.y,
-            35,
+            30,
             0,
             Math.PI*2
         );
@@ -340,6 +372,13 @@ function desenhar(){
         "#00ff00";
 
         ctx.fill();
+
+        ctx.strokeStyle =
+        "#ffffff";
+
+        ctx.lineWidth = 4;
+
+        ctx.stroke();
 
     });
 
@@ -391,11 +430,11 @@ function iniciarTouch(e){
         canvas.getBoundingClientRect().top -
         pontos[i].y;
 
-        if(
-            Math.sqrt(
-                dx*dx+dy*dy
-            ) < 40
-        ){
+       if(
+    Math.sqrt(
+        dx*dx+dy*dy
+    ) < 80
+){
 
             pontoSelecionado =
             i;
