@@ -141,13 +141,19 @@ function detectarObjeto(){
         new cv.Size(5,5),
         0
     );
-
-    cv.Canny(
-        blur,
-        edges,
-        50,
-        150
-    );
+    cv.threshold(
+    gray,
+    gray,
+    180,
+    255,
+    cv.THRESH_BINARY
+);
+   cv.Canny(
+    gray,
+    edges,
+    20,
+    80
+);
 
     cv.findContours(
         edges,
@@ -236,14 +242,12 @@ function detectarObjeto(){
 
     }else{
 
-        pontos = [
-
-            {x:50,y:50},
-            {x:canvas.width-50,y:50},
-            {x:canvas.width-50,y:canvas.height-50},
-            {x:50,y:canvas.height-50}
-
-        ];
+       pontos = [
+    {x:canvas.width*0.20,y:canvas.height*0.15},
+    {x:canvas.width*0.80,y:canvas.height*0.15},
+    {x:canvas.width*0.80,y:canvas.height*0.85},
+    {x:canvas.width*0.20,y:canvas.height*0.85}
+];
 
     }
 
